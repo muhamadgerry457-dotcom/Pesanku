@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2F7FF">
+<title>Kotak Pesan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Konsep tata letak: satu kolom ala aplikasi surat. Tombol "tebal" yang bisa ditekan,
+   amplop sebagai motif, warna permen cerah di atas latar biru muda. */
+:root {
+  color-scheme: light;
+  --bg: #F2F7FF;
+  --surface: #FFFFFF;
+  --field: #EEF3FF;
+  --ink: #1B2150;
+  --muted: #566090;
+  --line: #D9E1F8;
+  --line-deep: #C0CBEE;
+  --sun: #FFC83D;
+  --sun-deep: #E0A400;
+  --coral: #FF6B5B;
+  --sky: #35B6FF;
+  --sky-deep: #1B8FD6;
+  --mint: #2EDBA0;
+  --pink: #FF7EB6;
+  --violet: #6B4CF5;
+  --violet-deep: #4B30C4;
+  --on-bright: #1B2150;
+  --on-violet: #FFFFFF;
+  --focus: #6B4CF5;
+  --err: #C4372B;
+  --ok: #0E8F62;
+  --shadow: 0 14px 34px rgba(46, 58, 140, .14);
+  --blob-op: .5;
+  --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #101237;
+    --surface: #1B1F55;
+    --field: #252A6B;
+    --ink: #F2F4FF;
+    --muted: #AEB5E6;
+    --line: #343A80;
+    --line-deep: #232860;
+    --violet: #A793FF;
+    --violet-deep: #7C63E8;
+    --on-violet: #14163F;
+    --focus: #FFC83D;
+    --err: #FF9A8D;
+    --ok: #5CF0BC;
+    --shadow: 0 16px 36px rgba(0, 0, 0, .4);
+    --blob-op: .22;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+  padding-top: max(20px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(48px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+h1, h2, h3, p { margin: 0; }
+h1, h2 { font-family: var(--font-display); font-weight: 800; line-height: 1.1; text-wrap: balance; }
+h1:focus, h2:focus { outline: none; }
+button, input, textarea { font: inherit; color: inherit; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Latar */
+.bg { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.blob { position: absolute; border-radius: 50%; filter: blur(34px); opacity: var(--blob-op); animation: drift 24s ease-in-out infinite alternate; }
+.b1 { width: 300px; height: 300px; left: -90px; top: -70px; background: var(--sun); }
+.b2 { width: 340px; height: 340px; right: -140px; top: 32%; background: var(--sky); animation-delay: -8s; }
+.b3 { width: 280px; height: 280px; left: 15%; bottom: -130px; background: var(--pink); animation-delay: -15s; }
+.b4 { width: 200px; height: 200px; right: 10%; top: -60px; background: var(--mint); animation-delay: -4s; }
+
+.app { position: relative; z-index: 1; width: 100%; max-width: 600px; margin-inline: auto; display: flex; flex-direction: column; gap: 22px; }
+
+/* Bilah atas */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; }
+.brand svg { width: 42px; height: 34px; flex: none; }
+.top-actions { display: flex; align-items: center; gap: 8px; }
+.pill { padding: 5px 12px; border-radius: 999px; font-weight: 800; font-size: .8rem; background: var(--sun); color: var(--on-bright); }
+.pill.owner { background: var(--violet); color: var(--on-violet); }
+
+/* Tombol */
+.btn {
+  --deep: var(--sun-deep);
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 54px; padding: 0 26px; border: 0; border-radius: 18px;
+  font-weight: 800; font-size: 1.05rem; cursor: pointer;
+  box-shadow: 0 5px 0 var(--deep);
+  transition: transform .12s ease, box-shadow .12s ease, opacity .2s;
+}
+.btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 var(--deep); }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+.btn-sun { background: var(--sun); color: var(--on-bright); }
+.btn-ghost { min-height: 42px; padding: 0 16px; font-size: .92rem; background: transparent; color: var(--ink); box-shadow: none; border: 2px solid var(--line-deep); border-radius: 14px; }
+.btn-ghost:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+.btn svg { width: 22px; height: 22px; flex: none; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+@media (hover: hover) {
+  .btn-sun:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 0 var(--deep); }
+  .btn-ghost:hover { background: var(--field); }
+}
+
+/* Layar */
+.screen { display: flex; flex-direction: column; gap: 22px; }
+.screen.enter { animation: rise .45s cubic-bezier(.2, .8, .2, 1) both; }
+
+/* Beranda */
+.hero { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding-top: 6px; }
+.hero-env { width: 190px; height: auto; animation: bob 5s ease-in-out infinite; }
+.hero h1 { font-size: clamp(2rem, 8vw, 2.7rem); }
+.lead { color: var(--muted); max-width: 40ch; font-weight: 600; }
+.roles { display: flex; flex-direction: column; gap: 18px; }
+.role-wrap { animation: bob 5.5s ease-in-out infinite; }
+.role-wrap:nth-child(2) { animation-delay: -2.7s; }
+.role {
+  --deep: var(--sun-deep);
+  display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;
+  padding: 18px 20px; border: 0; border-radius: 26px; cursor: pointer;
+  background: var(--sun); color: var(--on-bright);
+  box-shadow: 0 7px 0 var(--deep), var(--shadow);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.role.owner { --deep: var(--violet-deep); background: var(--violet); color: var(--on-violet); }
+.role:active { transform: translateY(5px); box-shadow: 0 2px 0 var(--deep), var(--shadow); }
+@media (hover: hover) { .role:hover { transform: translateY(-3px); box-shadow: 0 10px 0 var(--deep), var(--shadow); } }
+.role-icon { width: 58px; height: 58px; flex: none; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .55); }
+.role.owner .role-icon { background: rgba(255, 255, 255, .22); }
+.role-icon svg { width: 30px; height: 30px; }
+.role-text { display: flex; flex-direction: column; min-width: 0; }
+.role-title { font-family: var(--font-display); font-weight: 800; font-size: 1.45rem; line-height: 1.1; }
+.role-desc { font-weight: 700; font-size: .95rem; opacity: .9; }
+.fine { text-align: center; color: var(--muted); font-size: .9rem; font-weight: 600; }
+
+.by { font-weight: 800; font-size: .95rem; padding: 4px 16px; border-radius: 999px; background: var(--surface); border: 2px solid var(--line); }
+.by strong { color: var(--violet); letter-spacing: .03em; }
+
+/* Jenis pesan */
+.cats { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.cats legend { font-weight: 800; font-size: .92rem; padding: 0; margin-bottom: 8px; }
+.cat { position: relative; min-width: 0; }
+.cat input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.cat span {
+  display: flex; align-items: center; justify-content: center; min-height: 58px; padding: 8px 4px; text-align: center;
+  border-radius: 16px; border: 2px solid var(--line); background: var(--field);
+  font-weight: 800; font-size: .95rem; line-height: 1.2;
+  transition: transform .12s ease, background .15s, box-shadow .12s;
+}
+.cat input:checked + span { border-color: transparent; color: var(--on-bright); transform: translateY(-2px); box-shadow: 0 4px 0 rgba(27, 33, 80, .28); }
+.cat.saran input:checked + span { background: var(--mint); }
+.cat.kritik input:checked + span { background: var(--coral); }
+.cat.rahasia input:checked + span { background: var(--violet); color: var(--on-violet); }
+.cat input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 3px; }
+.cat-hint { font-weight: 700; font-size: .92rem; color: var(--muted); margin-top: -6px; }
+
+/* Panel & form */
+.panel { background: var(--surface); border: 2px solid var(--line); border-radius: 28px; padding: 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 18px; }
+.panel h2 { font-size: 1.7rem; }
+.sub { color: var(--muted); font-weight: 600; }
+.stack { display: flex; flex-direction: column; gap: 18px; }
+.stack-sm { display: flex; flex-direction: column; gap: 6px; }
+.notice { padding: 12px 14px; border-radius: 14px; font-weight: 700; font-size: .95rem; background: var(--field); background: color-mix(in srgb, var(--sun) 26%, var(--surface)); border: 2px solid var(--sun); }
+form { display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field label { font-weight: 800; font-size: .92rem; }
+.field input, .field textarea {
+  width: 100%; padding: 13px 16px; border-radius: 14px; border: 2px solid var(--line);
+  background: var(--field); font-size: 1rem; font-weight: 600; resize: vertical;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field textarea { min-height: 150px; }
+.field input::placeholder, .field textarea::placeholder { color: var(--muted); opacity: .8; font-weight: 600; }
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 4px rgba(107, 76, 245, .22); }
+.field input:focus-visible, .field textarea:focus-visible { outline: none; }
+.field .meta { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.count { font-size: .85rem; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: auto; }
+.count.warn { color: var(--err); }
+.err { color: var(--err); font-weight: 700; font-size: .88rem; min-height: 1.3em; }
+.status { min-height: 1.4em; font-weight: 700; font-size: .95rem; color: var(--muted); }
+.status.err { color: var(--err); }
+.status.ok { color: var(--ok); }
+
+/* Terkirim */
+.sent { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 4px 0; }
+.sent h2 { font-size: 1.7rem; }
+.sent .btn { margin-top: 8px; }
+.send-env { width: 220px; height: auto; overflow: visible; }
+.e-back { fill: var(--sky-deep); }
+.e-front { fill: var(--sky); }
+.e-fold { fill: none; stroke: var(--sky-deep); stroke-width: 3; stroke-linecap: round; }
+.e-flap { fill: var(--sun); stroke: var(--sun); stroke-width: 4; stroke-linejoin: round; transform-box: fill-box; transform-origin: 50% 0%; }
+.e-paper { fill: var(--surface); stroke: var(--line-deep); stroke-width: 2; }
+.e-line { fill: var(--line-deep); }
+.letter { transform: translateY(22px); }
+.sent.play .letter { animation: drop 1s cubic-bezier(.5, 0, .3, 1) both; }
+.sent.play .e-flap { animation: close .5s ease-in .85s both; }
+.sent.play .env-all { animation: hop .5s ease-out 1.4s both; }
+.sent.play .spark { animation: burst .9s ease-out 1.5s both; }
+
+/* Sandi */
+.pin-wrap { display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; }
+.pin-wrap h2 { font-size: 1.8rem; }
+.dots { display: flex; gap: 14px; justify-content: center; padding: 6px 0; }
+.dot { width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--line-deep); background: transparent; transition: transform .15s, background .15s, border-color .15s; }
+.dot.on { background: var(--violet); border-color: var(--violet); transform: scale(1.18); }
+.dots.good .dot { background: var(--mint); border-color: var(--mint); animation: pulse .5s ease both; }
+.dots.bad .dot { background: var(--coral); border-color: var(--coral); }
+.dots.shake { animation: shake .45s ease; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 340px; }
+.key {
+  min-height: 68px; border-radius: 22px; border: 2px solid var(--line); background: var(--surface);
+  box-shadow: 0 5px 0 var(--line-deep); cursor: pointer;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.9rem; color: var(--ink);
+  display: grid; place-items: center;
+  transition: transform .1s ease, box-shadow .1s ease, background .15s;
+}
+.key:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--line-deep); background: var(--field); }
+.key:disabled { opacity: .45; cursor: not-allowed; }
+.key.small { font-family: var(--font-body); font-weight: 800; font-size: 1rem; color: var(--muted); }
+.key svg { width: 30px; height: 30px; }
+@media (hover: hover) { .key:hover:not(:disabled) { background: var(--field); } }
+
+/* Kotak masuk owner */
+.owner-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.owner-head h2 { font-size: 2rem; }
+.owner-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.search input { width: 100%; padding: 13px 16px; border-radius: 16px; border: 2px solid var(--line); background: var(--surface); font-weight: 600; transition: border-color .15s, box-shadow .15s; }
+.search input:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 4px rgba(107, 76, 245, .22); }
+.list { display: flex; flex-direction: column; }
+.day { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--muted); margin: 14px 4px 10px; }
+.day::after { content: ""; flex: 1; height: 2px; background: var(--line); border-radius: 2px; }
+.group { display: flex; flex-direction: column; gap: 12px; }
+.msg { display: flex; gap: 12px; padding: 14px 16px; background: var(--surface); border: 2px solid var(--line); border-radius: 22px; box-shadow: 0 4px 0 var(--line); }
+.msg.new { border-color: var(--sun); }
+.msg.rahasia { border-color: var(--violet); border-style: dashed; }
+.tag { font-size: .7rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; color: var(--on-bright); }
+.tag.saran { background: var(--mint); }
+.tag.kritik { background: var(--coral); }
+.tag.rahasia { background: var(--violet); color: var(--on-violet); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 40px; padding: 0 16px; border-radius: 999px; border: 2px solid var(--line-deep); background: transparent; font-weight: 800; font-size: .9rem; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--violet); border-color: var(--violet); color: var(--on-violet); }
+.msg.pop { animation: pop .45s cubic-bezier(.2, .9, .3, 1.15) both; animation-delay: calc(var(--i, 0) * 45ms); }
+.msg.fresh { animation: flash 1.8s ease-out; }
+.avatar { width: 42px; height: 42px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; color: var(--on-bright); }
+.msg-body { min-width: 0; flex: 1; }
+.msg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.msg-head strong { font-weight: 800; overflow-wrap: anywhere; }
+.msg-head time { color: var(--muted); font-size: .85rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.badge { background: var(--sun); color: var(--on-bright); font-size: .7rem; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.msg-text { margin-top: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font-weight: 600; }
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 18px 8px; }
+.empty svg { width: 150px; height: auto; animation: bob 5s ease-in-out infinite; }
+.empty h3 { font-family: var(--font-display); font-size: 1.4rem; }
+.empty p { color: var(--muted); font-weight: 600; max-width: 36ch; }
+
+/* Animasi */
+@keyframes rise { from { opacity: .5; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(40px, 30px) scale(1.12); } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(9px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(4px); } }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.35); } 100% { transform: scale(1.1); } }
+@keyframes pop { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes flash { 0% { box-shadow: 0 0 0 0 rgba(255, 200, 61, .9), 0 4px 0 var(--line); } 100% { box-shadow: 0 0 0 16px rgba(255, 200, 61, 0), 0 4px 0 var(--line); } }
+@keyframes drop { 0% { transform: translateY(-34px); } 100% { transform: translateY(22px); } }
+@keyframes close { 0% { transform: scaleY(-1); opacity: 0; } 15% { opacity: 1; } 100% { transform: scaleY(1); opacity: 1; } }
+@keyframes hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-14px); } 70% { transform: translateY(2px); } }
+@keyframes burst { 0% { opacity: 1; transform: translate(0, 0) scale(.4); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
+@keyframes twinkle { 0%, 100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.1); } }
+.tw { transform-box: fill-box; transform-origin: center; animation: twinkle 2.4s ease-in-out infinite; }
+.tw:nth-of-type(2) { animation-delay: -.8s; }
+.tw:nth-of-type(3) { animation-delay: -1.6s; }
+.spark { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-plane" viewBox="0 0 24 24"><path d="M3 11.5 21 3l-5.5 18-3.8-7.2L3 11.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m11.7 13.8 5.3-5.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13 6.5 5h11L20 13v6H4v-6Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M4 13h4.5l1 2h5l1-2H20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M9 5h11v14H9L3 12l6-7Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m12.5 9.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="bg" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><i class="blob b4"></i></div>
+
+<main class="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 160 120" aria-hidden="true"><rect class="e-back" x="10" y="24" width="140" height="88" rx="12"/><rect class="e-front" x="10" y="24" width="140" height="88" rx="12"/><path class="e-flap" d="M10 36a12 12 0 0 1 12-12H138a12 12 0 0 1 12 12L80 80Z"/></svg>
+      <span>Kotak Pesan</span>
+    </div>
+    <div class="top-actions">
+      <span id="role-pill" class="pill" hidden>Player</span>
+      <button id="btn-switch" class="btn btn-ghost" type="button" hidden>Ganti peran</button>
+    </div>
+  </header>
+
+  <!-- Beranda -->
+  <section id="screen-home" class="screen enter" aria-labelledby="home-title">
+    <div class="hero">
+      <svg class="hero-env" viewBox="0 -10 160 130" aria-hidden="true">
+        <circle class="tw" cx="14" cy="14" r="5" fill="var(--pink)"/>
+        <circle class="tw" cx="148" cy="8" r="4" fill="var(--mint)"/>
+        <circle class="tw" cx="150" cy="60" r="5" fill="var(--sun)"/>
+        <rect class="e-back" x="10" y="24" width="140" height="88" rx="12"/>
+        <g><rect class="e-paper" x="28" y="8" width="104" height="70" rx="6"/><rect class="e-line" x="40" y="22" width="60" height="6" rx="3"/><rect class="e-line" x="40" y="36" width="80" height="6" rx="3"/><rect class="e-line" x="40" y="50" width="44" height="6" rx="3"/></g>
+        <rect class="e-front" x="10" y="24" width="140" height="88" rx="12"/>
+        <path class="e-fold" d="M14 108 70 62M146 108 90 62"/>
+        <path class="e-flap" d="M10 36a12 12 0 0 1 12-12H138a12 12 0 0 1 12 12L80 80Z"/>
+      </svg>
+      <h1 id="home-title" tabindex="-1">Tinggalkan pesan, aku yang baca.</h1>
+      <p class="by">Owner: <strong>AnDeR</strong></p>
+      <p class="lead">Kirim saran, kritik, atau pesan rahasia. Pilih peranmu dulu: player menulis, owner membaca dengan sandi.</p>
+    </div>
+    <div class="roles">
+      <div class="role-wrap">
+        <button id="role-player" class="role" type="button">
+          <span class="role-icon"><svg aria-hidden="true"><use href="#i-plane"/></svg></span>
+          <span class="role-text"><span class="role-title">Player</span><span class="role-desc">Tulis nama dan pesanmu, lalu kirim.</span></span>
+        </button>
+      </div>
+      <div class="role-wrap">
+        <button id="role-owner" class="role owner" type="button">
+          <span class="role-icon"><svg aria-hidden="true"><use href="#i-inbox"/></svg></span>
+          <span class="role-text"><span class="role-title">Owner</span><span class="role-desc">Masukkan sandi untuk membaca pesan masuk.</span></span>
+        </button>
+      </div>
+    </div>
+    <p class="fine">Pesan yang dikirim hanya bisa dibaca owner.</p>
+  </section>
+
+  <!-- Player -->
+  <section id="screen-player" class="screen" aria-labelledby="player-title" hidden>
+    <div class="panel">
+      <div id="compose" class="stack">
+        <div class="stack-sm">
+          <h2 id="player-title" tabindex="-1">Tulis pesanmu</h2>
+          <p class="sub">Isi nama dan pesan, lalu kirim. Hanya owner yang bisa membacanya.</p>
+        </div>
+        <p id="player-notice" class="notice" hidden></p>
+        <form id="msg-form" novalidate>
+          <fieldset class="cats">
+            <legend>Jenis pesan</legend>
+            <label class="cat saran"><input type="radio" name="cat" value="saran" checked><span>Saran</span></label>
+            <label class="cat kritik"><input type="radio" name="cat" value="kritik"><span>Kritik</span></label>
+            <label class="cat rahasia"><input type="radio" name="cat" value="rahasia"><span>Pesan rahasia</span></label>
+          </fieldset>
+          <p id="cat-hint" class="cat-hint" aria-live="polite"></p>
+          <div class="field">
+            <label for="f-name">Nama</label>
+            <input id="f-name" type="text" maxlength="30" autocomplete="nickname" placeholder="Siapa namamu?" aria-describedby="e-name">
+            <p id="e-name" class="err" aria-live="polite"></p>
+          </div>
+          <div class="field">
+            <label for="f-msg">Pesan</label>
+            <textarea id="f-msg" maxlength="490" placeholder="Tulis apa saja yang ingin kamu sampaikan" aria-describedby="e-msg"></textarea>
+            <div class="meta"><p id="e-msg" class="err" aria-live="polite"></p><span id="count" class="count">0/490</span></div>
+          </div>
+          <button id="btn-send" class="btn btn-sun" type="submit"><svg aria-hidden="true"><use href="#i-plane"/></svg><span id="send-label">Kirim pesan</span></button>
+          <p id="send-status" class="status" role="status"></p>
+        </form>
+      </div>
+
+      <div id="sent" class="sent" hidden>
+        <svg class="send-env" viewBox="0 -30 160 150" aria-hidden="true">
+          <circle class="spark" style="--dx:-62px;--dy:-34px" cx="80" cy="30" r="5" fill="var(--pink)"/>
+          <circle class="spark" style="--dx:-34px;--dy:-58px" cx="80" cy="30" r="4" fill="var(--sun)"/>
+          <circle class="spark" style="--dx:0px;--dy:-66px" cx="80" cy="30" r="5" fill="var(--mint)"/>
+          <circle class="spark" style="--dx:36px;--dy:-58px" cx="80" cy="30" r="4" fill="var(--coral)"/>
+          <circle class="spark" style="--dx:64px;--dy:-32px" cx="80" cy="30" r="5" fill="var(--violet)"/>
+          <g class="env-all">
+            <rect class="e-back" x="10" y="24" width="140" height="88" rx="12"/>
+            <g class="letter"><rect class="e-paper" x="28" y="14" width="104" height="70" rx="6"/><rect class="e-line" x="40" y="28" width="60" height="6" rx="3"/><rect class="e-line" x="40" y="42" width="80" height="6" rx="3"/><rect class="e-line" x="40" y="56" width="44" height="6" rx="3"/></g>
+            <rect class="e-front" x="10" y="24" width="140" height="88" rx="12"/>
+            <path class="e-fold" d="M14 108 70 62M146 108 90 62"/>
+            <path class="e-flap" d="M10 36a12 12 0 0 1 12-12H138a12 12 0 0 1 12 12L80 80Z"/>
+          </g>
+        </svg>
+        <h2 id="sent-title" tabindex="-1">Pesan terkirim</h2>
+        <p id="sent-text" class="sub"></p>
+        <button id="btn-again" class="btn btn-sun" type="button">Tulis pesan lain</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sandi owner -->
+  <section id="screen-pin" class="screen" aria-labelledby="pin-title" hidden>
+    <div class="panel">
+      <div class="pin-wrap">
+        <div class="stack-sm" style="align-items:center">
+          <h2 id="pin-title" tabindex="-1">Masuk sebagai Owner</h2>
+          <p class="sub">Ketuk angka sandi di layar. Papan ketik tidak dipakai.</p>
+        </div>
+        <div id="dots" class="dots" role="img" aria-label="Sandi: 0 dari 6 angka">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+        <p id="pin-status" class="status" role="status" style="text-align:center"></p>
+        <div id="keypad" class="keypad">
+          <button class="key" type="button" data-key="1" aria-label="Angka 1">1</button>
+          <button class="key" type="button" data-key="2" aria-label="Angka 2">2</button>
+          <button class="key" type="button" data-key="3" aria-label="Angka 3">3</button>
+          <button class="key" type="button" data-key="4" aria-label="Angka 4">4</button>
+          <button class="key" type="button" data-key="5" aria-label="Angka 5">5</button>
+          <button class="key" type="button" data-key="6" aria-label="Angka 6">6</button>
+          <button class="key" type="button" data-key="7" aria-label="Angka 7">7</button>
+          <button class="key" type="button" data-key="8" aria-label="Angka 8">8</button>
+          <button class="key" type="button" data-key="9" aria-label="Angka 9">9</button>
+          <button class="key small" type="button" data-key="cancel">Batal</button>
+          <button class="key" type="button" data-key="0" aria-label="Angka 0">0</button>
+          <button class="key" type="button" data-key="del" aria-label="Hapus satu angka"><svg aria-hidden="true"><use href="#i-back"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Kotak masuk owner -->
+  <section id="screen-owner" class="screen" aria-labelledby="owner-title" hidden>
+    <div class="owner-head">
+      <div class="stack-sm">
+        <h2 id="owner-title" tabindex="-1">Kotak Masuk</h2>
+        <p id="owner-count" class="sub">Memuat pesan</p>
+      </div>
+      <div class="owner-btns">
+        <button id="btn-refresh" class="btn btn-ghost" type="button">Perbarui</button>
+        <button id="btn-logout" class="btn btn-ghost" type="button">Keluar</button>
+      </div>
+    </div>
+    <div class="search">
+      <label for="q" class="sr-only">Cari pesan</label>
+      <input id="q" type="search" placeholder="Cari nama atau isi pesan" autocomplete="off">
+    </div>
+    <div id="filters" class="filters" role="group" aria-label="Saring jenis pesan">
+      <button class="chip" type="button" data-f="all" aria-pressed="true">Semua</button>
+      <button class="chip" type="button" data-f="saran" aria-pressed="false">Saran</button>
+      <button class="chip" type="button" data-f="kritik" aria-pressed="false">Kritik</button>
+      <button class="chip" type="button" data-f="rahasia" aria-pressed="false">Rahasia</button>
+    </div>
+    <p id="owner-status" class="status" role="status"></p>
+    <div id="list" class="list"></div>
+    <div id="empty" class="empty" hidden>
+      <svg viewBox="0 0 160 130" aria-hidden="true">
+        <rect x="30" y="40" width="100" height="70" rx="22" fill="var(--sky)"/>
+        <rect x="30" y="40" width="100" height="70" rx="22" fill="var(--sky-deep)" opacity=".25"/>
+        <rect x="52" y="64" width="56" height="8" rx="4" fill="var(--ink)" opacity=".75"/>
+        <rect x="68" y="106" width="24" height="22" rx="4" fill="var(--sun)"/>
+        <rect x="124" y="14" width="6" height="40" rx="3" fill="var(--ink)" opacity=".6"/>
+        <path d="M130 14h22v14h-22z" fill="var(--coral)"/>
+      </svg>
+      <h3>Belum ada pesan masuk</h3>
+      <p>Pesan dari para player akan muncul di sini begitu mereka mengirimnya.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ====== PENGATURAN: isi dua baris ini dengan data dari Supabase ====== */
+  var SUPABASE_URL = "https://jcoubsfksqkokthdllih.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_pmmZ7Kozefwau_TX4EMjqg_78dwPpaM";
+  /* ==================================================================== */
+
+  var BASE = String(SUPABASE_URL).replace(/\/+$/, "");
+  var configured = SUPABASE_URL.indexOf("ISI_") !== 0 && SUPABASE_KEY.indexOf("ISI_") !== 0;
+  var MAX_MSG = 490, COOLDOWN_MS = 5000, POLL_MS = 10000;
+  var NAME_KEY = "kotakpesan.nama", SEEN_KEY = "kotakpesan.seenAt";
+
+  /* Jenis pesan disimpan sebagai awalan di isi pesan ("#S|", "#K|", "#R|"), jadi database tidak berubah. */
+  var CATS = {
+    saran:   { code: "S", label: "Saran",   hint: "Sampaikan ide atau masukanmu untuk AnDeR.", ph: "Tulis sarannya di sini" },
+    kritik:  { code: "K", label: "Kritik",  hint: "Sampaikan kritikmu dengan jujur dan sopan.", ph: "Tulis kritiknya di sini" },
+    rahasia: { code: "R", label: "Pesan rahasia", hint: "Pesan rahasia. Hanya AnDeR yang bisa membacanya.", ph: "Tulis pesan rahasiamu di sini" }
+  };
+  var CODE2CAT = { S: "saran", K: "kritik", R: "rahasia" };
+  function encodeBody(cat, text) { return "#" + CATS[cat].code + "|" + text; }
+  function decodeBody(body) {
+    var m = /^#([SKR])\|([\s\S]*)$/.exec(body);
+    return m ? { cat: CODE2CAT[m[1]], text: m[2] } : { cat: "", text: body };
+  }
+
+  function $(s) { return document.querySelector(s); }
+  var store = {
+    get: function (k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
+  };
+  function delay(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  /* ---------- Database (Supabase REST) ---------- */
+  function api(path, body, extra) {
+    var headers = { "apikey": SUPABASE_KEY, "Content-Type": "application/json" };
+    if (SUPABASE_KEY.indexOf("eyJ") === 0) headers["Authorization"] = "Bearer " + SUPABASE_KEY;
+    if (extra) for (var k in extra) headers[k] = extra[k];
+    return fetch(BASE + path, { method: "POST", headers: headers, body: JSON.stringify(body) }).then(function (res) {
+      return res.text().then(function (txt) {
+        var data = null;
+        try { data = txt ? JSON.parse(txt) : null; } catch (e) {}
+        if (!res.ok) {
+          var err = new Error((data && data.message) || ("HTTP " + res.status));
+          err.status = res.status; err.code = data && data.code;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+  function sendToDb(name, text) { return api("/rest/v1/messages", { name: name, body: text }, { "Prefer": "return=minimal" }); }
+  function readFromDb(pin) { return api("/rest/v1/rpc/get_messages", { pin_input: pin }); }
+  function isWrongPin(err) {
+    return err && (err.status === 401 || err.status === 403 || err.code === "28000" || /sandi/i.test(err.message || ""));
+  }
+
+  /* ---------- Navigasi ---------- */
+  var views = { home: $("#screen-home"), player: $("#screen-player"), pin: $("#screen-pin"), owner: $("#screen-owner") };
+  var current = "home";
+  function show(name) {
+    if (current === "owner" && name !== "owner") leaveOwner();
+    current = name;
+    for (var k in views) { views[k].hidden = (k !== name); }
+    var v = views[name];
+    v.classList.remove("enter"); void v.offsetWidth; v.classList.add("enter");
+    var pill = $("#role-pill");
+    pill.hidden = !(name === "player" || name === "owner");
+    pill.textContent = name === "owner" ? "Owner" : "Player";
+    pill.className = "pill" + (name === "owner" ? " owner" : "");
+    $("#btn-switch").hidden = (name === "home");
+    if (name === "pin") resetPin();
+    var h = v.querySelector("h1, h2");
+    if (h && name !== "owner") { try { h.focus({ preventScroll: true }); } catch (e) {} }
+    window.scrollTo(0, 0);
+  }
+  $("#role-player").addEventListener("click", function () { show("player"); });
+  $("#role-owner").addEventListener("click", function () { show("pin"); });
+  $("#btn-switch").addEventListener("click", function () { show("home"); });
+  $("#btn-logout").addEventListener("click", function () { show("home"); });
+
+  /* ---------- Player ---------- */
+  var nameEl = $("#f-name"), msgEl = $("#f-msg"), countEl = $("#count");
+  var sendBtn = $("#btn-send"), sendLabel = $("#send-label"), sendStatus = $("#send-status");
+  var sending = false, lastSend = 0;
+  var savedName = store.get(NAME_KEY);
+  if (savedName) nameEl.value = savedName.slice(0, 30);
+  if (!configured) {
+    var n = $("#player-notice");
+    n.textContent = "Website ini belum dihubungkan ke database, jadi pesan belum bisa dikirim. Beri tahu pemiliknya.";
+    n.hidden = false; sendBtn.disabled = true;
+  }
+  function updateCount() {
+    var len = msgEl.value.length;
+    countEl.textContent = len + "/" + MAX_MSG;
+    countEl.classList.toggle("warn", len >= MAX_MSG - 30);
+  }
+  msgEl.addEventListener("input", function () { updateCount(); if (msgEl.value.trim()) $("#e-msg").textContent = ""; });
+  nameEl.addEventListener("input", function () { if (nameEl.value.trim()) $("#e-name").textContent = ""; });
+  updateCount();
+
+  var catRadios = Array.prototype.slice.call(document.querySelectorAll('input[name="cat"]'));
+  function selectedCat() {
+    for (var i = 0; i < catRadios.length; i++) { if (catRadios[i].checked) return catRadios[i].value; }
+    return "saran";
+  }
+  function applyCat() {
+    var c = CATS[selectedCat()];
+    $("#cat-hint").textContent = c.hint;
+    msgEl.placeholder = c.ph;
+  }
+  catRadios.forEach(function (r) { r.addEventListener("change", applyCat); });
+  applyCat();
+
+  function setSendStatus(text, kind) { sendStatus.textContent = text || ""; sendStatus.className = "status" + (kind ? " " + kind : ""); }
+  function sendError(e) {
+    var s = e && e.status;
+    if (s === 429) return "Terlalu banyak pesan sekaligus. Tunggu sebentar, lalu kirim lagi.";
+    if (s === 400 || s === 422) return "Pesan ditolak. Pastikan nama dan pesan terisi dan tidak terlalu panjang.";
+    if (s === 401 || s === 403) return "Izin mengirim ditolak oleh database. Beri tahu pemilik website.";
+    return "Pesan belum terkirim. Periksa koneksi internet, lalu coba lagi.";
+  }
+
+  $("#msg-form").addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    if (sending || !configured) return;
+    var name = nameEl.value.trim(), text = msgEl.value.trim();
+    $("#e-name").textContent = name ? "" : "Isi namamu dulu ya.";
+    $("#e-msg").textContent = text ? "" : "Pesannya masih kosong.";
+    if (!name) { nameEl.focus(); return; }
+    if (!text) { msgEl.focus(); return; }
+    var wait = COOLDOWN_MS - (Date.now() - lastSend);
+    if (wait > 0) { setSendStatus("Tunggu " + Math.ceil(wait / 1000) + " detik sebelum mengirim lagi.", "err"); return; }
+
+    sending = true; sendBtn.disabled = true; sendLabel.textContent = "Mengirim"; setSendStatus("");
+    try {
+      var cat = selectedCat(), payload = encodeBody(cat, text);
+      try { await sendToDb(name, payload); }
+      catch (e1) {
+        if (!e1.status) { await delay(800); await sendToDb(name, payload); }
+        else throw e1;
+      }
+      lastSend = Date.now();
+      store.set(NAME_KEY, name);
+      showSent(name, cat);
+    } catch (e) {
+      setSendStatus(sendError(e), "err");
+    } finally {
+      sending = false; sendLabel.textContent = "Kirim pesan"; sendBtn.disabled = !configured;
+    }
+  });
+  function showSent(name, cat) {
+    $("#compose").hidden = true;
+    var s = $("#sent");
+    s.hidden = false;
+    $("#sent-text").textContent = "Terima kasih, " + name + ". " + CATS[cat].label + " darimu sudah masuk ke kotak AnDeR.";
+    s.classList.remove("play"); void s.offsetWidth; s.classList.add("play");
+    try { $("#sent-title").focus({ preventScroll: true }); } catch (e) {}
+  }
+  $("#btn-again").addEventListener("click", function () {
+    $("#sent").hidden = true; $("#sent").classList.remove("play");
+    $("#compose").hidden = false;
+    msgEl.value = ""; updateCount(); setSendStatus("");
+    msgEl.focus();
+  });
+
+  /* ---------- Sandi owner (keypad di layar, diperiksa server) ---------- */
+  var buf = "", busy = false, locked = false, fails = 0, lockTimer = null, ownerPin = "";
+  var dotsEl = $("#dots"), pinStatus = $("#pin-status"), keypad = $("#keypad");
+  var dotEls = Array.prototype.slice.call(dotsEl.children);
+  function setPinStatus(t, kind) { pinStatus.textContent = t || ""; pinStatus.className = "status" + (kind ? " " + kind : ""); }
+  function renderDots() {
+    dotEls.forEach(function (d, i) { d.classList.toggle("on", i < buf.length); });
+    dotsEl.setAttribute("aria-label", "Sandi: " + buf.length + " dari 6 angka");
+  }
+  function resetPin() {
+    buf = ""; busy = false; dotsEl.className = "dots"; renderDots();
+    if (!locked) setPinStatus("");
+  }
+  function setKeysDisabled(v) {
+    Array.prototype.forEach.call(keypad.querySelectorAll("button"), function (b) {
+      if (b.getAttribute("data-key") === "cancel") return;
+      b.disabled = v;
+    });
+  }
+  function lockFor(seconds) {
+    locked = true; setKeysDisabled(true);
+    var until = Date.now() + seconds * 1000;
+    function tick() {
+      var left = Math.ceil((until - Date.now()) / 1000);
+      if (left <= 0) {
+        clearInterval(lockTimer); lockTimer = null;
+        locked = false; fails = 0; setKeysDisabled(false); setPinStatus("Silakan coba lagi.");
+      } else {
+        setPinStatus("Terlalu banyak percobaan. Coba lagi dalam " + left + " detik.", "err");
+      }
+    }
+    tick(); lockTimer = setInterval(tick, 500);
+  }
+  function wrongPin() {
+    fails++;
+    dotsEl.classList.add("bad", "shake");
+    setPinStatus("Sandi salah. Coba lagi.", "err");
+    setTimeout(function () {
+      buf = ""; busy = false; dotsEl.className = "dots"; renderDots();
+      if (fails >= 5) lockFor(30);
+    }, 520);
+  }
+  function checkPin() {
+    busy = true;
+    if (!configured) {
+      setPinStatus("Website ini belum dihubungkan ke database.", "err");
+      setTimeout(resetPinKeepStatus, 600);
+      return;
+    }
+    setPinStatus("Memeriksa");
+    var tried = buf;
+    readFromDb(tried).then(function (rows) {
+      fails = 0; ownerPin = tried;
+      dotsEl.classList.add("good");
+      setPinStatus("Sandi benar", "ok");
+      setTimeout(function () { show("owner"); enterOwner(rows); }, 450);
+    }).catch(function (err) {
+      if (isWrongPin(err)) { wrongPin(); return; }
+      setPinStatus("Tidak bisa terhubung ke database. Periksa koneksi, lalu coba lagi.", "err");
+      setTimeout(resetPinKeepStatus, 600);
+    });
+  }
+  function resetPinKeepStatus() { buf = ""; busy = false; dotsEl.className = "dots"; renderDots(); }
+  keypad.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-key]");
+    if (!b) return;
+    var k = b.getAttribute("data-key");
+    if (k === "cancel") { show("home"); return; }
+    if (locked || busy) return;
+    if (k === "del") { buf = buf.slice(0, -1); renderDots(); setPinStatus(""); return; }
+    if (buf.length >= 6) return;
+    buf += k; renderDots(); setPinStatus("");
+    if (buf.length === 6) setTimeout(checkPin, 140);
+  });
+
+  /* ---------- Kotak masuk owner ---------- */
+  var pollTimer = null, loaded = false, settled = false, hasAnimated = false, refreshing = false;
+  var known = {}, freshIds = {}, allMsgs = [], seenBefore = 0, catFilter = "all";
+  var COLORS = ["sun", "coral", "sky", "mint", "pink"];
+
+  function setOwnerStatus(t, kind) { var s = $("#owner-status"); s.textContent = t || ""; s.className = "status" + (kind ? " " + kind : ""); }
+  function colorFor(name) { var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0; return COLORS[h % COLORS.length]; }
+  function initial(name) { var ch = Array.from(name.trim())[0]; return (ch || "?").toUpperCase(); }
+  function dayKey(t) { var d = new Date(t); return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); }
+  function dayLabel(t) {
+    var now = Date.now();
+    if (dayKey(t) === dayKey(now)) return "Hari ini";
+    if (dayKey(t) === dayKey(now - 864e5)) return "Kemarin";
+    try { return new Intl.DateTimeFormat("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(new Date(t)); }
+    catch (e) { return new Date(t).toDateString(); }
+  }
+  function timeLabel(t) {
+    try { return new Date(t).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }); }
+    catch (e) { return ""; }
+  }
+
+  function enterOwner(rows) {
+    seenBefore = Number(store.get(SEEN_KEY)) || 0;
+    known = {}; freshIds = {}; allMsgs = []; loaded = false; settled = false; hasAnimated = false;
+    $("#q").value = "";
+    setFilter("all", true);
+    $("#list").textContent = "";
+    $("#empty").hidden = true;
+    setOwnerStatus("");
+    applyRows(rows);
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function () { if (!document.hidden) refresh(false); }, POLL_MS);
+    try { $("#owner-title").focus({ preventScroll: true }); } catch (e) {}
+  }
+  function applyRows(rows) {
+    var out = [];
+    (Array.isArray(rows) ? rows : []).forEach(function (r) {
+      if (!r || typeof r.body !== "string") return;
+      var d = decodeBody(r.body);
+      out.push({ id: String(r.id), name: String(r.name || "Tanpa nama"), text: d.text, cat: d.cat, at: Date.parse(r.created_at) || 0 });
+    });
+    out.sort(function (a, b) { return b.at - a.at; });
+    out.forEach(function (m) { if (settled && !known[m.id]) freshIds[m.id] = true; known[m.id] = true; });
+    settled = true; loaded = true; allMsgs = out;
+    renderList();
+  }
+  function refresh(manual) {
+    if (refreshing || current !== "owner") return;
+    refreshing = true;
+    if (manual) setOwnerStatus("Memperbarui");
+    readFromDb(ownerPin).then(function (rows) {
+      if (current !== "owner") return;
+      applyRows(rows);
+      setOwnerStatus("Diperbarui pukul " + timeLabel(Date.now()));
+    }).catch(function (err) {
+      if (current !== "owner") return;
+      if (isWrongPin(err)) setOwnerStatus("Sandi owner sudah berubah. Keluar, lalu masuk lagi dengan sandi baru.", "err");
+      else setOwnerStatus("Belum tersambung. Pesan yang terlihat mungkin belum terbaru.", "err");
+    }).then(function () { refreshing = false; });
+  }
+  $("#btn-refresh").addEventListener("click", function () { refresh(true); });
+
+  function renderList() {
+    var list = $("#list");
+    var q = $("#q").value.trim().toLowerCase();
+    var shown = allMsgs.filter(function (m) {
+      if (catFilter !== "all" && m.cat !== catFilter) return false;
+      return !q || m.name.toLowerCase().indexOf(q) >= 0 || m.text.toLowerCase().indexOf(q) >= 0;
+    });
+    var total = allMsgs.length;
+    var fresh = allMsgs.filter(function (m) { return m.at > seenBefore; }).length;
+    $("#owner-count").textContent = total === 0 ? "Belum ada pesan" : total + " pesan" + (fresh > 0 ? ", " + fresh + " baru" : "");
+    list.textContent = "";
+    $("#empty").hidden = !(loaded && total === 0);
+    var animate = !hasAnimated;
+    var group = null, lastKey = "", idx = 0;
+    shown.slice(0, 500).forEach(function (m) {
+      var key = dayKey(m.at);
+      if (key !== lastKey) {
+        lastKey = key;
+        var h = document.createElement("h3"); h.className = "day"; h.textContent = dayLabel(m.at);
+        group = document.createElement("div"); group.className = "group";
+        list.appendChild(h); list.appendChild(group);
+      }
+      group.appendChild(buildCard(m, idx++, animate));
+    });
+    if (shown.length > 0) hasAnimated = true;
+    if (shown.length > 500) { var more = document.createElement("p"); more.className = "fine"; more.textContent = "Menampilkan 500 pesan terbaru."; list.appendChild(more); }
+    if (total > 0 && shown.length === 0) {
+      var none = document.createElement("p"); none.className = "fine"; none.textContent = "Tidak ada pesan yang cocok dengan pencarian."; list.appendChild(none);
+    }
+  }
+  function buildCard(m, i, animate) {
+    var isNew = m.at > seenBefore;
+    var el = document.createElement("article");
+    el.className = "msg" + (animate ? " pop" : "") + (isNew ? " new" : "") + (freshIds[m.id] ? " fresh" : "") + (m.cat === "rahasia" ? " rahasia" : "");
+    el.style.setProperty("--i", String(Math.min(i, 12)));
+    var av = document.createElement("div"); av.className = "avatar"; av.setAttribute("aria-hidden", "true");
+    av.style.background = "var(--" + colorFor(m.name) + ")"; av.textContent = initial(m.name);
+    var body = document.createElement("div"); body.className = "msg-body";
+    var head = document.createElement("div"); head.className = "msg-head";
+    var nm = document.createElement("strong"); nm.textContent = m.name;
+    var tm = document.createElement("time"); tm.textContent = timeLabel(m.at);
+    try { tm.dateTime = new Date(m.at).toISOString(); } catch (e) {}
+    head.appendChild(nm); head.appendChild(tm);
+    if (m.cat) { var tg = document.createElement("span"); tg.className = "tag " + m.cat; tg.textContent = CATS[m.cat].label; head.appendChild(tg); }
+    if (isNew) { var b = document.createElement("span"); b.className = "badge"; b.textContent = "Baru"; head.appendChild(b); }
+    var p = document.createElement("p"); p.className = "msg-text"; p.textContent = m.text;
+    body.appendChild(head); body.appendChild(p);
+    el.appendChild(av); el.appendChild(body);
+    return el;
+  }
+  $("#q").addEventListener("input", function () { if (current === "owner") renderList(); });
+  function setFilter(f, silent) {
+    catFilter = f;
+    Array.prototype.forEach.call(document.querySelectorAll("#filters .chip"), function (c) {
+      c.setAttribute("aria-pressed", c.getAttribute("data-f") === f ? "true" : "false");
+    });
+    if (!silent && current === "owner") { hasAnimated = false; renderList(); }
+  }
+  $("#filters").addEventListener("click", function (ev) {
+    var b = ev.target.closest(".chip");
+    if (b) setFilter(b.getAttribute("data-f"));
+  });
+
+  function commitSeen() {
+    var max = 0;
+    allMsgs.forEach(function (m) { if (m.at > max) max = m.at; });
+    if (max > 0) store.set(SEEN_KEY, String(Math.max(max, Number(store.get(SEEN_KEY)) || 0)));
+  }
+  function leaveOwner() {
+    commitSeen();
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    ownerPin = ""; allMsgs = []; known = {}; freshIds = {};
+    $("#list").textContent = "";
+  }
+  window.addEventListener("pagehide", function () { if (current === "owner") commitSeen(); });
+})();
+</script>
+</body>
+</html>
